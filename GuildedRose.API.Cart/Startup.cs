@@ -36,14 +36,13 @@ namespace GuildedRose.API.Cart
                             .AllowAnyHeader();
                         });
             });
-            services.AddDbContext<CartContext>(opt => opt.UseInMemoryDatabase("CartItems"));
             services.AddControllers();
+            services.AddScoped<ICartRepository, CartRepository>();
+            services.AddDbContext<CartContext>(opt => opt.UseInMemoryDatabase("CartItems"));
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "GuildedRose.API.Cart", Version = "v1" });
-            });
-
-            services.AddScoped<ICartService, CartService>();
+            });            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

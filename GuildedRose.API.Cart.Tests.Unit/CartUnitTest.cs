@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using GuildedRose.API.Cart.Models;
 using GuildedRose.API.Cart.Interfaces;
-using GuildedRose.API.Cart.Controllers;
-using Moq;
+using GuildedRose.API.Cart.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace GuildedRose.API.Cart.Tests.Unit
 {
@@ -14,12 +14,32 @@ namespace GuildedRose.API.Cart.Tests.Unit
         string cartid = "123445677";
 
         [Fact]
-        public async Task AddItemToCart_success()
+        public void AddItemToCart_success()
         {
-            var mockRepo = new Mock<ICartService>();
-            var cartController = new CartController(mockRepo.Object);
-            cartController.ModelState.AddModelError("error", "base error");
+            CartItem cartitem = new CartItem()
+            {
+                Id = "B11111",
+                cartid = cartid,
+                Price = "20.00",
+                Quantity = 1
+            };
 
+            var options = new DbContextOptionsBuilder<CartContext>().UseInMemoryDatabase(databaseName: "CartItems").Options;
+
+
+            using (var context = new CartContext(options))
+            {
+                CartRepository _controller = new CartRepository(context);
+                var ok = _controller.AddItem(cartid, cartitem);
+
+                Assert.IsAssignableFrom<CartItem>(ok.Result.Value);
+            }
+        }
+
+
+        [Fact]
+        public void Get_Cart_success()
+        {
             CartItem cartitem = new CartItem()
             {
                 Id = "A11111",
@@ -28,32 +48,39 @@ namespace GuildedRose.API.Cart.Tests.Unit
                 Quantity = 1
             };
 
-            var result = await cartController.AddItem(cartid, cartitem);
+            var options = new DbContextOptionsBuilder<CartContext>().UseInMemoryDatabase(databaseName: "CartItems").Options;
 
-            Assert.Equal(cartitem, (result.Result as CreatedAtActionResult).Value);
+
+            using (var context = new CartContext(options))
+            {
+                CartRepository _controller = new CartRepository(context);
+                var ok = _controller.AddItem(cartid, cartitem);
+
+                Assert.IsAssignableFrom<CartItem>(ok.Result.Value);
+
+                var cart = _controller.GetCart(cartid);
+
+                Assert.IsAssignableFrom<CartModel>(cart.Result.Value);
+            }
         }
 
         [Fact]
-        public async Task AddItemToCart_NoIdPassed_Fail()
+        public void Get_NonExistingCart_ShouldBeNull()
         {
-            CartItem cartitem = new CartItem()
+            var invalidCartId = "abcdef";
+
+            var options = new DbContextOptionsBuilder<CartContext>().UseInMemoryDatabase(databaseName: "CartItems").Options;
+
+
+            using (var context = new CartContext(options))
             {
-                Id = "A11111",
-                cartid = cartid,
-                Price = "10.00",
-                Quantity = 1
-            };
+                CartRepository _controller = new CartRepository(context);
+   
 
-            var mockRepo = new Mock<ICartService>();
-            mockRepo.Setup(repo => repo.AddItem(cartid, cartitem)).Returns(Task.CompletedTask);
-            var cartController = new CartController(mockRepo.Object);
-            cartController.ModelState.AddModelError("error", "base error");
+                var cart = _controller.GetCart(invalidCartId);
 
-
-
-            var result = await cartController.AddItem("", cartitem);
-
-            Assert.Equal(cartitem, (result.Result as CreatedAtActionResult).Value);
+                Assert.Null(cart.Result.Value);
+            }
         }
     }
 }

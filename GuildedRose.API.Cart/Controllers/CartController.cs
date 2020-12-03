@@ -17,9 +17,9 @@ namespace GuildedRose.API.Cart.Controllers
     [ApiController]
     public class CartController : ControllerBase
     {
-        private readonly ICartService _service;
+        private readonly ICartRepository _service;
 
-        public CartController(ICartService service)
+        public CartController(ICartRepository service)
         {
             _service = service;
         }
@@ -42,41 +42,8 @@ namespace GuildedRose.API.Cart.Controllers
         [HttpPost("{id}")]
         public async Task<ActionResult<CartItem>> AddItem(string id, CartItem cartitem)
         {
-            var cartModel = await  _service.AddItem(id, cartitem);
-
-            if (cartModel.Value == null)
-            {
-                CartModel newcartmodel = new CartModel()
-                {
-                    Id = id,
-                    Items = new List<CartItem>()
-                };
-                newcartmodel.Items.Add(new CartItem()
-                {
-                    cartid = id,
-                    Id = cartitem.Id,
-                    Price = cartitem.Price,
-                    Quantity = cartitem.Quantity
-                });
-                // _context.Cart.Add(newcartmodel);
-                _service.CreateCart(newcartmodel);
-            }
-            else
-            {
-                if (cartModel.Value.Items.Contains(cartitem))
-                {
-                    // increment the inventory coutn
-                }
-                else
-                {
-                    cartModel.Value.Items.Add(cartitem);
-                }
-
-            }
-
-            await _service.Save();
-            //return _context.SaveChangesAsync();
-            return CreatedAtAction("AddItem", new { id = cartitem.Id }, cartitem);
+            await _service.AddItem(id, cartitem);
+            return CreatedAtAction(nameof(AddItem), new { id = cartitem.Id }, cartitem);
         }
 
         //// DELETE: api/Cart/5
